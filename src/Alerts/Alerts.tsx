@@ -13,7 +13,7 @@ const Alerts: React.FC = () => {
   const [search, setSearch] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [selectedImei, setSelectedImei] = useState<string>('');
+  const [selectedImei, setSelectedImei] = useState<any>(700070635323);
   const [imeiSearchTerm, setImeiSearchTerm] = useState('');
   const [isImeiDropdownOpen, setIsImeiDropdownOpen] = useState(false);
 
@@ -21,182 +21,33 @@ const Alerts: React.FC = () => {
     const fetchAlerts = async () => {
       try {
         setLoading(true);
+        // Construct the API URL with any filter parameters
+        const startDateParam = '2025-03-19T10:55:06Z';
+        const endDateParam = '2025-03-20T07:54:08Z';
+        const imeiValue = '700070635323';
         
-        // This is sample data for demonstration, in production this would be an API call
-        // For example: const response = await fetch('/api/alerts');
-        // const data = await response.json();
+        const apiUrl = `http://localhost:3000/alert?startDate=${encodeURIComponent(startDateParam)}&endDate=${encodeURIComponent(endDateParam)}&imei=${encodeURIComponent(imeiValue)}`;
         
-        // Using the provided sample data for now
-        const sampleAlert: Alert = {
-          "_id": {
-            "$oid": "67da9c609b745ab2909d7c0c"
-          },
-          "imei": "700070635323",
-          "latitude": 28.516482,
-          "source": "System",
-          "value": "",
-          "alertType": "battery",
-          "deviceType": "traqloc508",
-          "dateTime": "2025-03-19T10:28:13Z",
-          "deviceTypeAlert": "traqloc508",
-          "messageProperty": "0073",
-          "packetType": "0200",
-          "serialNo": "0014",
-          "speed": 0,
-          "alertMessage": "Low Battery Alert: Battery level is at 98.00%, below the threshold of 99.00%.",
-          "altitude": 272,
-          "bearing": 0,
-          "headerIdentifier": "7e",
-          "longitude": 77.16524,
-          "statusBitDefinition": {
-            "latitudeUnit": "North Latitude",
-            "motionState": true,
-            "shackleOpen": true,
-            "activeSim": "SIM card 2",
-            "connectionType": "Non",
-            "gps": true,
-            "gpsOn": true,
-            "ignitionOn": false,
-            "longitudeUnit": "East Longitude",
-            "network": "2G",
-            "sealOpen": true,
-            "chargeStatus": "In-charging",
-            "connection": false
-          },
-          "Additional Data": [
-            {
-              "MCC": "0194",
-              "baseStation": [
-                {
-                  "LAC": "087e",
-                  "MNC": "000a",
-                  "RXL": "00",
-                  "CELLID": "0928ad0b"
-                }
-              ]
-            },
-            {
-              "dynamicPassword": "3331333431323134"
-            },
-            {
-              "Unknown Message ID": "00002710"
-            },
-            {
-              "batteryPercentage": 98,
-              "batteryVoltage": 418
-            },
-            {
-              "networkCsqSignalValue": 10
-            },
-            {
-              "satellites": 24
-            },
-            {
-              "Data": "404100590350734"
-            },
-            {
-              "Data": "IMZCORP"
-            },
-            {
-              "Data": "8991102405903507341F"
-            }
-          ],
-          "alarmFlagBit": {
-            "overSpeed": false,
-            "shackleWireCut": false,
-            "shellTampered": true,
-            "gnssFailure": false,
-            "gpsAntennaOpen": false,
-            "mcuCommAbnormal": false,
-            "motorStuckUnseal": false,
-            "timeoutParking": false,
-            "gpsAntennaShort": false,
-            "lowBattery": false,
-            "mainPowerFailure": false,
-            "shackleDamaged": false
-          }
-        };
-
-        // Create a few more sample alerts with different values for demonstration
-        const additionalAlerts = [
-          {
-            ...sampleAlert,
-        //     _id: { $oid: "67da9c609b745ab2909d7c0d" },
-        //     imei: "700070635324",
-        //     alertType: "tamper",
-        //     alertMessage: "Tamper Alert: Device shell has been opened.",
-        //     dateTime: "2025-03-19T09:45:00Z",
-        //     "Additional Data": [
-        //       ...sampleAlert["Additional Data"].map(data => {
-        //         if (data.batteryPercentage !== undefined) {
-        //           return { ...data, batteryPercentage: 45 };
-        //         }
-        //         return data;
-        //       })
-        //     ],
-        //     alarmFlagBit: { ...sampleAlert.alarmFlagBit, shellTampered: true }
-        //   },
-        //   {
-        //     ...sampleAlert,
-        //     _id: { $oid: "67da9c609b745ab2909d7c0e" },
-        //     imei: "700070635325",
-        //     alertType: "gps",
-        //     alertMessage: "GPS Signal Lost: Unable to acquire location data.",
-        //     dateTime: "2025-03-19T08:30:00Z",
-        //     latitude: 28.613939,
-        //     longitude: 77.209021,
-        //     "Additional Data": [
-        //       ...sampleAlert["Additional Data"].map(data => {
-        //         if (data.batteryPercentage !== undefined) {
-        //           return { ...data, batteryPercentage: 72 };
-        //         }
-        //         return data;
-        //       })
-        //     ],
-        //     alarmFlagBit: { ...sampleAlert.alarmFlagBit, gnssFailure: true }
-        //   },
-        //   {
-        //     ...sampleAlert,
-        //     _id: { $oid: "67da9c609b745ab2909d7c0f" },
-        //     imei: "700070635323",
-        //     alertType: "speed",
-        //     alertMessage: "Speed Alert: Vehicle exceeding speed limit (85 km/h).",
-        //     dateTime: "2025-03-18T22:15:00Z",
-        //     speed: 85,
-        //     "Additional Data": [
-        //       ...sampleAlert["Additional Data"].map(data => {
-        //         if (data.batteryPercentage !== undefined) {
-        //           return { ...data, batteryPercentage: 65 };
-        //         }
-        //         return data;
-        //       })
-        //     ],
-        //     alarmFlagBit: { ...sampleAlert.alarmFlagBit, overSpeed: true }
-        //   },
-        //   {
-        //     ...sampleAlert,
-        //     _id: { $oid: "67da9c609b745ab2909d7c10" },
-        //     imei: "700070635326",
-        //     alertType: "battery",
-        //     alertMessage: "Critical Battery Alert: Battery level is at 12.00%, critical threshold reached.",
-        //     dateTime: "2025-03-18T18:45:00Z",
-        //     "Additional Data": [
-        //       ...sampleAlert["Additional Data"].map(data => {
-        //         if (data.batteryPercentage !== undefined) {
-        //           return { ...data, batteryPercentage: 12 };
-        //         }
-        //         return data;
-        //       })
-        //     ],
-        //     alarmFlagBit: { ...sampleAlert.alarmFlagBit, lowBattery: true }
-        //   }
+        const response = await fetch(apiUrl);
+        
+        if (!response.ok) {
+          throw new Error(`API request failed with status ${response.status}`);
         }
-        ];
-
-        // Combine the sample alerts
-        const allAlerts = [sampleAlert, ...additionalAlerts];
-        setAlerts(allAlerts);
-        setFilteredAlerts(allAlerts);
+        
+        const responseData = await response.json();
+        
+        if (responseData.success && Array.isArray(responseData.data)) {
+          const processedData = responseData.data.map((alert: any) => ({
+            ...alert,
+            "Additional Data": alert["Additional Data"] || []
+          }));
+          
+          setAlerts(processedData);
+          setFilteredAlerts(processedData);
+        } else {
+          console.error('Unexpected API response structure:', responseData);
+          throw new Error('Unexpected API response structure');
+        }
         
         setLoading(false);
       } catch (err) {
@@ -205,22 +56,23 @@ const Alerts: React.FC = () => {
         console.error("Error fetching alerts:", err);
       }
     };
-
+    
     fetchAlerts();
-  }, []);
+  }, [startDate, endDate, selectedImei]);
 
-  // Filter alerts when filter criteria changes
   useEffect(() => {
+    if (!alerts.length) return;
+    
     const filtered = alerts.filter(alert => {
       const matchesSearch = 
-        alert.alertType.toLowerCase().includes(search.toLowerCase()) ||
-        alert.alertMessage.toLowerCase().includes(search.toLowerCase()) ||
-        alert.imei.toLowerCase().includes(search.toLowerCase());
+        (alert.alertType && alert.alertType.toLowerCase().includes(search.toLowerCase())) ||
+        (alert.alertMessage && alert.alertMessage.toLowerCase().includes(search.toLowerCase())) ||
+        (alert.imei && alert.imei.toLowerCase().includes(search.toLowerCase()));
       
       const alertDate = new Date(alert.dateTime);
       const matchesStartDate = startDate ? alertDate >= new Date(startDate) : true;
       const matchesEndDate = endDate ? alertDate <= new Date(endDate) : true;
-      const matchesImei = selectedImei ? alert.imei === selectedImei : true;
+      const matchesImei = selectedImei ? alert.imei === selectedImei.toString() : true;
       
       return matchesSearch && matchesStartDate && matchesEndDate && matchesImei;
     });
@@ -229,9 +81,9 @@ const Alerts: React.FC = () => {
   }, [alerts, search, startDate, endDate, selectedImei]);
 
   // Get unique IMEIs for dropdown
-  const uniqueImeis = Array.from(new Set(alerts.map(alert => alert.imei)));
-  const filteredImeis = uniqueImeis.filter(imei => 
-    imei.toLowerCase().includes(imeiSearchTerm.toLowerCase())
+  const uniqueImeis = Array.from(new Set(alerts?.map(alert => alert.imei)));
+  const filteredImeis = uniqueImeis?.filter(imei => 
+    imei?.toLowerCase()?.includes(imeiSearchTerm?.toLowerCase())
   );
 
   const formatDate = (dateString: string) => {
@@ -267,15 +119,17 @@ const Alerts: React.FC = () => {
     {
       header: 'Alert Type',
       accessor: (alert) => {
+        const alertTypeString = String(alert.alertType || '');
         return (
           <span 
             className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-              alert.alertType === 'battery' ? 'bg-yellow-100 text-yellow-800' : 
-              alert.alertType === 'tamper' ? 'bg-red-100 text-red-800' : 
-              'bg-green-100 text-green-800'
+              alertTypeString.includes('battery') ? 'bg-yellow-100 text-yellow-800' : 
+              alertTypeString.includes('tamper') || alertTypeString.includes('unsealed') ? 'bg-red-100 text-red-800' : 
+              alertTypeString.includes('sealed') ? 'bg-green-100 text-green-800' :
+              'bg-blue-100 text-blue-800'
             }`}
           >
-            {alert.alertType}
+            {alertTypeString}
           </span>
         );
       }
@@ -287,69 +141,84 @@ const Alerts: React.FC = () => {
     },
     {
       header: 'Device Type',
-      accessor: 'deviceType',
+      accessor: 'deviceTypeAlert',
       className: 'whitespace-nowrap'
     },
     {
-        header: 'Location',
-        accessor: (alert) => {
-          return (
-            <div className="flex items-center justify-center">
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  // Use a URL that will show a marker by using the map embed URL
-                  const apiKey = 'AIzaSyAaZ1M_ofwVoLohowruNhY0fyihH9NpcI0';
-                  const googleMapsUrl = `https://www.google.com/maps/embed/v1/place?key=AIzaSyAaZ1M_ofwVoLohowruNhY0fyihH9NpcI0&q=${alert.latitude},${alert.longitude}&zoom=15`;
-                  
-                  // For a more consistent experience, open in a new window with specific dimensions
-                  const mapWindow = window.open('', '_blank', 'width=800,height=600');
-                  
-                  if (mapWindow) {
-                    mapWindow.document.write(`
-                      <!DOCTYPE html>
-                      <html>
-                        <head>
-                          <title>Location: ${alert.latitude.toFixed(6)}, ${alert.longitude.toFixed(6)}</title>
-                          <style>
-                            body, html { margin: 0; padding: 0; height: 100%; }
-                            iframe { width: 100%; height: 100%; border: none; }
-                          </style>
-                        </head>
-                        <body>
-                          <iframe
-                            src="${googleMapsUrl}"
-                            allowfullscreen>
-                          </iframe>
-                        </body>
-                      </html>
-                    `);
-                  } else {
-                    // Fallback if popup is blocked
-                    window.open(`https://www.google.com/maps?q=${alert.latitude},${alert.longitude}&z=15`, '_blank');
-                  }
-                }}
-                className="p-2 text-blue-600 hover:text-blue-800 focus:outline-none"
-                title={`${alert.latitude.toFixed(6)}, ${alert.longitude.toFixed(6)}`}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-              </button>
-            </div>
-          );
-        },
-        className: 'whitespace-nowrap'
+      header: 'Location',
+      accessor: (alert) => {
+        return (
+          <div className="flex items-center justify-center">
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                // Use a URL that will show a marker by using the map embed URL
+                const apiKey = 'AIzaSyAaZ1M_ofwVoLohowruNhY0fyihH9NpcI0';
+                const googleMapsUrl = `https://www.google.com/maps/embed/v1/place?key=${apiKey}&q=${alert.latitude},${alert.longitude}&zoom=15`;
+                
+                // For a more consistent experience, open in a new window with specific dimensions
+                const mapWindow = window.open('', '_blank', 'width=800,height=600');
+                
+                if (mapWindow) {
+                  mapWindow.document.write(`
+                    <!DOCTYPE html>
+                    <html>
+                      <head>
+                        <title>Location: ${alert.latitude.toFixed(6)}, ${alert.longitude.toFixed(6)}</title>
+                        <style>
+                          body, html { margin: 0; padding: 0; height: 100%; }
+                          iframe { width: 100%; height: 100%; border: none; }
+                        </style>
+                      </head>
+                      <body>
+                        <iframe
+                          src="${googleMapsUrl}"
+                          allowfullscreen>
+                        </iframe>
+                      </body>
+                    </html>
+                  `);
+                } else {
+                  // Fallback if popup is blocked
+                  window.open(`https://www.google.com/maps?q=${alert.latitude},${alert.longitude}&z=15`, '_blank');
+                }
+              }}
+              className="p-2 text-blue-600 hover:text-blue-800 focus:outline-none"
+              title={`${alert.latitude.toFixed(6)}, ${alert.longitude.toFixed(6)}`}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </button>
+          </div>
+        );
       },
+      className: 'whitespace-nowrap'
+    },
     {
       header: 'Battery',
       accessor: (alert) => {
-        // Find battery data
-        const batteryData = alert["Additional Data"].find(data => 
-          data.batteryPercentage !== undefined
-        );
-        const batteryPercentage = batteryData?.batteryPercentage || 'N/A';
+        // Default to 'N/A' if Additional Data is missing or doesn't have battery info
+        let batteryPercentage:any = 'N/A';
+        
+        // Try to find battery percentage in the alert message if it contains it
+        if (alert.alertMessage && alert.alertMessage.includes('Battery') && alert.alertType === 'battery') {
+          const match = alert.alertMessage.match(/Battery level is at (\d+\.\d+)%/);
+          if (match && match[1]) {
+            batteryPercentage = parseFloat(match[1]);
+          }
+        }
+        
+        // Try to get battery percentage from Additional Data if it exists
+        if (alert["Additional Data"] && Array.isArray(alert["Additional Data"])) {
+          const batteryData = alert["Additional Data"].find(data => 
+            data.batteryPercentage !== undefined
+          );
+          if (batteryData?.batteryPercentage !== undefined) {
+            batteryPercentage = batteryData.batteryPercentage;
+          }
+        }
         
         return (
           <div className="flex items-center">
@@ -358,7 +227,7 @@ const Alerts: React.FC = () => {
                 className={`h-full ${
                   typeof batteryPercentage === 'number' && batteryPercentage < 20 ? 'bg-red-500' : 
                   typeof batteryPercentage === 'number' && batteryPercentage < 50 ? 'bg-yellow-500' : 
-                  'bg-green-500'
+                  typeof batteryPercentage === 'number' ? 'bg-green-500' : 'bg-gray-300'
                 }`}
                 style={{ width: `${typeof batteryPercentage === 'number' ? batteryPercentage : 0}%` }}
               ></div>
@@ -493,7 +362,7 @@ const Alerts: React.FC = () => {
           <CustomTable
             data={filteredAlerts}
             columns={columns}
-            keyExtractor={(alert) => alert._id.$oid}
+            keyExtractor={(alert:any) => alert._id}
             loading={loading}
             pagination={true}
             itemsPerPageOptions={[10, 25, 50, 100]}

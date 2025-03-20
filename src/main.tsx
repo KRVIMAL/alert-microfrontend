@@ -7,8 +7,6 @@ import { liveClient } from "./core-services/graphql/apollo-client.ts";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <ApolloProvider client={liveClient}>
       <App />
-    </ApolloProvider>
   </StrictMode>
 );

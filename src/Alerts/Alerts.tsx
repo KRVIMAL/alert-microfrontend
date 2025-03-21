@@ -16,8 +16,6 @@ interface Alert {
     batteryPercentage?: number;
     [key: string]: any;
   }>;
-  source:string;
-  value:string;
 }
 
 const Alerts: React.FC = () => {
@@ -27,6 +25,9 @@ const Alerts: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [noDataMessage, setNoDataMessage] = useState<string | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState<boolean>(true);
+  const [totalRecords, setTotalRecords] = useState<number>(0);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [itemsPerPage, setItemsPerPage] = useState<number>(10);
   
   // Filters
   const [search, setSearch] = useState('');
@@ -52,7 +53,7 @@ const Alerts: React.FC = () => {
     setEndDate(formatDateForInput(tomorrow));
   }, []);
 
-  const fetchAlerts = async () => {
+  const fetchAlerts = async (page = currentPage, limit = itemsPerPage) => {
     if (!startDate || !endDate || !selectedImei) {
       return; // Don't fetch until all required filters are set
     }
@@ -63,12 +64,12 @@ const Alerts: React.FC = () => {
       setNoDataMessage(null);
       setError(null);
       
-      // Construct the API URL with filter parameters
+      // Construct the API URL with filter parameters and pagination
       const startDateParam = new Date(startDate).toISOString();
       const endDateParam = new Date(endDate).toISOString();
       const imeiValue = selectedImei;
       
-      const apiUrl = `http://localhost:3000/alert?startDate=${encodeURIComponent(startDateParam)}&endDate=${encodeURIComponent(endDateParam)}&imei=${encodeURIComponent(imeiValue)}`;
+      const apiUrl = `http://localhost:3000/alert?startDate=${encodeURIComponent(startDateParam)}&endDate=${encodeURIComponent(endDateParam)}&imei=${encodeURIComponent(imeiValue)}&page=${page}&limit=${limit}`;
       
       const response = await fetch(apiUrl);
       
@@ -77,6 +78,7 @@ const Alerts: React.FC = () => {
         setNoDataMessage(errorData.message || "No data found for the selected criteria");
         setAlerts([]);
         setFilteredAlerts([]);
+        setTotalRecords(0);
         setLoading(false);
         return;
       }
@@ -96,9 +98,22 @@ const Alerts: React.FC = () => {
         setAlerts(processedData);
         setFilteredAlerts(processedData);
         
-        // Extract unique IMEIs from the data
-        const imeis = Array.from(new Set(processedData.map((alert: Alert) => alert.imei)));
-        setUniqueImeis(imeis as string[]);
+        // Set total records for pagination
+        if (responseData.meta && responseData.meta.total) {
+          setTotalRecords(responseData.meta.total);
+        } else {
+          // If meta data is not provided, use the length of the current data
+          setTotalRecords(processedData.length);
+        }
+        
+        // Extract unique IMEIs from the data if we need to populate the dropdown
+        if (uniqueImeis.length === 0 || page === 1) {
+          // Only update IMEIs list on first page or if list is empty
+          const imeis = Array.from(new Set(processedData.map((alert: Alert) => alert.imei)));
+          if (imeis.length > 0) {
+            setUniqueImeis(imeis as string[]);
+          }
+        }
       } else {
         console.error('Unexpected API response structure:', responseData);
         throw new Error('Unexpected API response structure');
@@ -113,12 +128,21 @@ const Alerts: React.FC = () => {
     }
   };
 
-  // Fetch data when filters change
+  // Fetch data when filters change or pagination changes
   useEffect(() => {
     if (!isInitialLoad && startDate && endDate && selectedImei) {
-      fetchAlerts();
+      // Reset to page 1 when filters change
+      setCurrentPage(1);
+      fetchAlerts(1, itemsPerPage);
     }
   }, [startDate, endDate, selectedImei, isInitialLoad]);
+  
+  // Handle page or items per page changes
+  useEffect(() => {
+    if (!isInitialLoad && startDate && endDate && selectedImei) {
+      fetchAlerts(currentPage, itemsPerPage);
+    }
+  }, [currentPage, itemsPerPage]);
 
   // Filter alerts based on search term
   useEffect(() => {
@@ -166,10 +190,14 @@ const Alerts: React.FC = () => {
     setFilteredAlerts([]);
     setNoDataMessage(null);
     setError(null);
+    setCurrentPage(1);
+    setItemsPerPage(10);
+    setTotalRecords(0);
   };
 
   const applyFilters = () => {
-    fetchAlerts();
+    setCurrentPage(1); // Reset to first page when applying new filters
+    fetchAlerts(1, itemsPerPage);
   };
 
   // Define table columns
@@ -201,16 +229,6 @@ const Alerts: React.FC = () => {
           </span>
         );
       }
-    },
-    {
-      header: 'Source',
-      accessor: 'source',
-      className: 'whitespace-nowrap'
-    },
-    {
-      header: 'Value',
-      accessor: 'value',
-      className: 'whitespace-nowrap'
     },
     {
       header: 'Alert Message',
@@ -323,6 +341,14 @@ const Alerts: React.FC = () => {
         <h1 className="text-2xl font-bold text-gray-800">Device Alerts</h1>
         <p className="text-gray-600">Monitor and manage device alerts from your fleet</p>
       </div>
+      
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+          <strong className="font-bold">Error: </strong>
+          <span className="block sm:inline">{error}</span>
+        </div>
+      )}
       
       {/* Custom Filters */}
       <div className="mb-6 p-4 bg-white rounded-lg shadow-md">
@@ -446,14 +472,6 @@ const Alerts: React.FC = () => {
         </div>
       </div>
       
-      {/* Error Message */}
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
-          <strong className="font-bold">Error: </strong>
-          <span className="block sm:inline">{error}</span>
-        </div>
-      )}
-      
       {/* No Data Message */}
       {noDataMessage && !error && !loading && (
         <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative mb-4" role="alert">
@@ -477,7 +495,14 @@ const Alerts: React.FC = () => {
           loading={loading}
           pagination={true}
           itemsPerPageOptions={[10, 25, 50, 100]}
-          defaultItemsPerPage={10}
+          defaultItemsPerPage={itemsPerPage}
+          currentPage={currentPage}
+          totalRecords={totalRecords}
+          onPageChange={(page) => setCurrentPage(page)}
+          onItemsPerPageChange={(limit) => {
+            setItemsPerPage(limit);
+            setCurrentPage(1); // Reset to first page when changing items per page
+          }}
           searchable={false} // We're using our custom search instead
           emptyMessage={noDataMessage || (isInitialLoad ? "Select filters to view data" : "No alerts found matching your filters.")}
           loadingMessage="Loading alerts..."

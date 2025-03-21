@@ -15,6 +15,10 @@ interface CustomTableProps<T> {
   pagination?: boolean;
   itemsPerPageOptions?: number[];
   defaultItemsPerPage?: number;
+  currentPage?: number;
+  totalRecords?: number;
+  onPageChange?: (page: number) => void;
+  onItemsPerPageChange?: (itemsPerPage: number) => void;
   searchable?: boolean;
   searchPlaceholder?: string;
   onSearch?: (searchTerm: string) => void;
@@ -31,6 +35,10 @@ const CustomTable = <T extends object>({
   pagination = true,
   itemsPerPageOptions = [10, 25, 50, 100],
   defaultItemsPerPage = 10,
+  currentPage: externalCurrentPage,
+  totalRecords,
+  onPageChange,
+  onItemsPerPageChange,
   searchable = false,
   searchPlaceholder = 'Search...',
   onSearch,
@@ -38,20 +46,35 @@ const CustomTable = <T extends object>({
   loadingMessage = 'Loading data...',
   className = '',
 }: CustomTableProps<T>) => {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(defaultItemsPerPage);
+  // Use internal state if external control is not provided
+  const [internalCurrentPage, setInternalCurrentPage] = useState(1);
+  const [internalItemsPerPage, setInternalItemsPerPage] = useState(defaultItemsPerPage);
   const [searchTerm, setSearchTerm] = useState('');
   const [jumpToPage, setJumpToPage] = useState('');
 
-  const totalPages = Math.ceil(data.length / itemsPerPage);
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = data.slice(indexOfFirstItem, indexOfLastItem);
+  // Use either controlled or uncontrolled state
+  const currentPageValue = externalCurrentPage !== undefined ? externalCurrentPage : internalCurrentPage;
+  const itemsPerPageValue = defaultItemsPerPage;
+
+  // Calculate pagination values
+  const calculatedTotalRecords = totalRecords !== undefined ? totalRecords : data.length;
+  const totalPages = Math.ceil(calculatedTotalRecords / itemsPerPageValue);
+  
+  // Only slice the data if we're handling pagination client-side (no external control)
+  const currentItems = onPageChange ? data : data.slice(
+    (currentPageValue - 1) * itemsPerPageValue, 
+    currentPageValue * itemsPerPageValue
+  );
+  
+  const indexOfFirstItem = (currentPageValue - 1) * itemsPerPageValue + 1;
+  const indexOfLastItem = Math.min(currentPageValue * itemsPerPageValue, calculatedTotalRecords);
 
   // Reset to first page when data changes or items per page changes
   useEffect(() => {
-    setCurrentPage(1);
-  }, [data.length, itemsPerPage]);
+    if (!onPageChange) {
+      setInternalCurrentPage(1);
+    }
+  }, [data.length, defaultItemsPerPage, onPageChange]);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const term = e.target.value;
@@ -61,7 +84,11 @@ const CustomTable = <T extends object>({
 
   const goToPage = (page: number) => {
     if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
+      if (onPageChange) {
+        onPageChange(page);
+      } else {
+        setInternalCurrentPage(page);
+      }
     }
   };
 
@@ -94,8 +121,8 @@ const CustomTable = <T extends object>({
       const leftOffset = Math.floor(maxVisiblePages / 2);
       const rightOffset = Math.ceil(maxVisiblePages / 2) - 1;
       
-      let startPage = Math.max(currentPage - leftOffset, 1);
-      let endPage = Math.min(currentPage + rightOffset, totalPages);
+      let startPage = Math.max(currentPageValue - leftOffset, 1);
+      let endPage = Math.min(currentPageValue + rightOffset, totalPages);
       
       // Adjust if we're near the beginning or end
       if (startPage === 1) {
@@ -189,18 +216,25 @@ const CustomTable = <T extends object>({
           <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
             <div>
               <p className="text-sm text-gray-700">
-                Showing <span className="font-medium">{indexOfFirstItem + 1}</span> to{" "}
+                Showing <span className="font-medium">{indexOfFirstItem}</span> to{" "}
                 <span className="font-medium">
-                  {Math.min(indexOfLastItem, data.length)}
+                  {indexOfLastItem}
                 </span>{" "}
-                of <span className="font-medium">{data.length}</span> results
+                of <span className="font-medium">{calculatedTotalRecords}</span> results
               </p>
             </div>
             <div className="flex items-center space-x-2">
               <select
                 className="text-sm border-gray-300 rounded-md"
-                value={itemsPerPage}
-                onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                value={itemsPerPageValue}
+                onChange={(e) => {
+                  const newValue = Number(e.target.value);
+                  if (onItemsPerPageChange) {
+                    onItemsPerPageChange(newValue);
+                  } else {
+                    setInternalItemsPerPage(newValue);
+                  }
+                }}
               >
                 {itemsPerPageOptions.map(option => (
                   <option key={option} value={option}>{option} per page</option>
@@ -211,9 +245,9 @@ const CustomTable = <T extends object>({
                 {/* First Page */}
                 <button
                   onClick={() => goToPage(1)}
-                  disabled={currentPage === 1}
+                  disabled={currentPageValue === 1}
                   className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium ${
-                    currentPage === 1 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-500 hover:bg-gray-50'
+                    currentPageValue === 1 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-500 hover:bg-gray-50'
                   }`}
                 >
                   <span className="sr-only">First Page</span>
@@ -222,10 +256,10 @@ const CustomTable = <T extends object>({
                 
                 {/* Previous Page */}
                 <button
-                  onClick={() => goToPage(currentPage - 1)}
-                  disabled={currentPage === 1}
+                  onClick={() => goToPage(currentPageValue - 1)}
+                  disabled={currentPageValue === 1}
                   className={`relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium ${
-                    currentPage === 1 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-500 hover:bg-gray-50'
+                    currentPageValue === 1 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-500 hover:bg-gray-50'
                   }`}
                 >
                   <span className="sr-only">Previous</span>
@@ -238,7 +272,7 @@ const CustomTable = <T extends object>({
                     key={pageNumber}
                     onClick={() => goToPage(pageNumber)}
                     className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium ${
-                      currentPage === pageNumber 
+                      currentPageValue === pageNumber 
                         ? 'z-10 bg-blue-50 border-blue-500 text-blue-600' 
                         : 'bg-white text-gray-500 hover:bg-gray-50'
                     }`}
@@ -249,10 +283,10 @@ const CustomTable = <T extends object>({
                 
                 {/* Next Page */}
                 <button
-                  onClick={() => goToPage(currentPage + 1)}
-                  disabled={currentPage === totalPages}
+                  onClick={() => goToPage(currentPageValue + 1)}
+                  disabled={currentPageValue === totalPages}
                   className={`relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium ${
-                    currentPage === totalPages ? 'text-gray-300 cursor-not-allowed' : 'text-gray-500 hover:bg-gray-50'
+                    currentPageValue === totalPages ? 'text-gray-300 cursor-not-allowed' : 'text-gray-500 hover:bg-gray-50'
                   }`}
                 >
                   <span className="sr-only">Next</span>
@@ -262,9 +296,9 @@ const CustomTable = <T extends object>({
                 {/* Last Page */}
                 <button
                   onClick={() => goToPage(totalPages)}
-                  disabled={currentPage === totalPages}
+                  disabled={currentPageValue === totalPages}
                   className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium ${
-                    currentPage === totalPages ? 'text-gray-300 cursor-not-allowed' : 'text-gray-500 hover:bg-gray-50'
+                    currentPageValue === totalPages ? 'text-gray-300 cursor-not-allowed' : 'text-gray-500 hover:bg-gray-50'
                   }`}
                 >
                   <span className="sr-only">Last Page</span>
@@ -296,39 +330,39 @@ const CustomTable = <T extends object>({
           <div className="flex sm:hidden justify-between w-full">
             <button
               onClick={() => goToPage(1)}
-              disabled={currentPage === 1}
+              disabled={currentPageValue === 1}
               className={`relative inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md ${
-                currentPage === 1 ? 'text-gray-300 bg-gray-50 cursor-not-allowed' : 'text-gray-700 bg-white hover:bg-gray-50'
+                currentPageValue === 1 ? 'text-gray-300 bg-gray-50 cursor-not-allowed' : 'text-gray-700 bg-white hover:bg-gray-50'
               }`}
             >
               First
             </button>
             <button
-              onClick={() => goToPage(currentPage - 1)}
-              disabled={currentPage === 1}
+              onClick={() => goToPage(currentPageValue - 1)}
+              disabled={currentPageValue === 1}
               className={`relative inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md ${
-                currentPage === 1 ? 'text-gray-300 bg-gray-50 cursor-not-allowed' : 'text-gray-700 bg-white hover:bg-gray-50'
+                currentPageValue === 1 ? 'text-gray-300 bg-gray-50 cursor-not-allowed' : 'text-gray-700 bg-white hover:bg-gray-50'
               }`}
             >
               Prev
             </button>
             <span className="text-sm text-gray-700 py-2">
-              {currentPage} / {totalPages}
+              {currentPageValue} / {totalPages}
             </span>
             <button
-              onClick={() => goToPage(currentPage + 1)}
-              disabled={currentPage === totalPages}
+              onClick={() => goToPage(currentPageValue + 1)}
+              disabled={currentPageValue === totalPages}
               className={`relative inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md ${
-                currentPage === totalPages ? 'text-gray-300 bg-gray-50 cursor-not-allowed' : 'text-gray-700 bg-white hover:bg-gray-50'
+                currentPageValue === totalPages ? 'text-gray-300 bg-gray-50 cursor-not-allowed' : 'text-gray-700 bg-white hover:bg-gray-50'
               }`}
             >
               Next
             </button>
             <button
               onClick={() => goToPage(totalPages)}
-              disabled={currentPage === totalPages}
+              disabled={currentPageValue === totalPages}
               className={`relative inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md ${
-                currentPage === totalPages ? 'text-gray-300 bg-gray-50 cursor-not-allowed' : 'text-gray-700 bg-white hover:bg-gray-50'
+                currentPageValue === totalPages ? 'text-gray-300 bg-gray-50 cursor-not-allowed' : 'text-gray-700 bg-white hover:bg-gray-50'
               }`}
             >
               Last

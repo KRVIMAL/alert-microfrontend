@@ -31,8 +31,8 @@ const Alerts: React.FC = () => {
   
   // Filters
   const [search, setSearch] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [startDate, setStartDate] = useState('2025-03-21T07:38:13Z');
+  const [endDate, setEndDate] = useState('2025-03-21T08:35:44Z');
   const [selectedImei, setSelectedImei] = useState<string>('');
   const [imeiSearchTerm, setImeiSearchTerm] = useState('');
   const [isImeiDropdownOpen, setIsImeiDropdownOpen] = useState(false);
@@ -88,7 +88,6 @@ const Alerts: React.FC = () => {
       }
       
       const responseData = await response.json();
-      
       if (responseData.success && Array.isArray(responseData.data)) {
         const processedData = responseData.data.map((alert: any) => ({
           ...alert,

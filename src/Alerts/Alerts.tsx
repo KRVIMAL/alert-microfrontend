@@ -16,6 +16,8 @@ interface Alert {
     batteryPercentage?: number;
     [key: string]: any;
   }>;
+  source:string;
+  value:string;
 }
 
 const Alerts: React.FC = () => {
@@ -228,6 +230,16 @@ const Alerts: React.FC = () => {
           </span>
         );
       }
+    },
+    {
+      header: 'Source',
+      accessor: 'source',
+      className: 'whitespace-nowrap'
+    }, 
+     {
+      header: 'Value',
+      accessor: 'value',
+      className: 'whitespace-nowrap'
     },
     {
       header: 'Alert Message',

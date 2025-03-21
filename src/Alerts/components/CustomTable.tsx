@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { FiChevronLeft, FiChevronRight, FiChevronsLeft, FiChevronsRight } from 'react-icons/fi';
+import { FiChevronLeft, FiChevronRight, FiChevronsLeft, FiChevronsRight, FiSearch } from 'react-icons/fi';
 
 export interface Column<T> {
   header: string;
   accessor: keyof T | ((data: T) => React.ReactNode);
-  cell?: (data: T) => React.ReactNode;
   className?: string;
 }
 
@@ -80,6 +79,40 @@ const CustomTable = <T extends object>({
     }
   };
 
+  // Calculate visible page numbers for pagination
+  const getPageNumbers = () => {
+    const maxVisiblePages = 5;
+    const pageNumbers = [];
+    
+    if (totalPages <= maxVisiblePages) {
+      // If total pages is less than max visible, show all
+      for (let i = 1; i <= totalPages; i++) {
+        pageNumbers.push(i);
+      }
+    } else {
+      // Always include first and last page
+      const leftOffset = Math.floor(maxVisiblePages / 2);
+      const rightOffset = Math.ceil(maxVisiblePages / 2) - 1;
+      
+      let startPage = Math.max(currentPage - leftOffset, 1);
+      let endPage = Math.min(currentPage + rightOffset, totalPages);
+      
+      // Adjust if we're near the beginning or end
+      if (startPage === 1) {
+        endPage = maxVisiblePages;
+      }
+      if (endPage === totalPages) {
+        startPage = Math.max(totalPages - maxVisiblePages + 1, 1);
+      }
+      
+      for (let i = startPage; i <= endPage; i++) {
+        pageNumbers.push(i);
+      }
+    }
+    
+    return pageNumbers;
+  };
+
   return (
     <div className={`w-full bg-white shadow-md rounded-lg overflow-hidden ${className}`}>
       {/* Search */}
@@ -89,21 +122,19 @@ const CustomTable = <T extends object>({
             <input
               type="text"
               placeholder={searchPlaceholder}
-              className="w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={searchTerm}
               onChange={handleSearch}
             />
-            <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-              <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <FiSearch className="h-5 w-5 text-gray-400" />
             </div>
           </div>
         </div>
       )}
 
       {/* Table */}
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto max-h-[calc(100vh-300px)]">
         {loading ? (
           <div className="text-center py-12">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -113,7 +144,7 @@ const CustomTable = <T extends object>({
           <>
             {data.length > 0 ? (
               <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+                <thead className="bg-gray-50 sticky top-0 z-10">
                   <tr>
                     {columns.map((column, index) => (
                       <th 
@@ -134,11 +165,9 @@ const CustomTable = <T extends object>({
                           key={index} 
                           className={`px-6 py-4 text-sm text-gray-500 ${column.className || ''}`}
                         >
-                          {column.cell 
-                            ? column.cell(item) 
-                            : typeof column.accessor === 'function'
-                              ? column.accessor(item)
-                              : String(item[column.accessor])}
+                          {typeof column.accessor === 'function'
+                            ? column.accessor(item)
+                            : String(item[column.accessor])}
                         </td>
                       ))}
                     </tr>
@@ -157,7 +186,7 @@ const CustomTable = <T extends object>({
       {/* Pagination */}
       {pagination && data.length > 0 && (
         <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-          <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+          <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
             <div>
               <p className="text-sm text-gray-700">
                 Showing <span className="font-medium">{indexOfFirstItem + 1}</span> to{" "}
@@ -204,29 +233,19 @@ const CustomTable = <T extends object>({
                 </button>
                 
                 {/* Page numbers */}
-                <div className="flex items-center">
-                  <span className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
-                    Page {currentPage} of {totalPages}
-                  </span>
-                </div>
-                
-                {/* Jump to page */}
-                <div className="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm">
-                  <input
-                    type="text"
-                    placeholder="Go to"
-                    className="w-16 py-1 px-2 border-0 focus:ring-0 text-xs"
-                    value={jumpToPage}
-                    onChange={(e) => setJumpToPage(e.target.value.replace(/[^0-9]/g, ''))}
-                    onKeyDown={handleKeyDown}
-                  />
+                {getPageNumbers().map(pageNumber => (
                   <button
-                    onClick={handleJumpToPage}
-                    className="text-xs px-1 text-gray-700 hover:text-gray-900"
+                    key={pageNumber}
+                    onClick={() => goToPage(pageNumber)}
+                    className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium ${
+                      currentPage === pageNumber 
+                        ? 'z-10 bg-blue-50 border-blue-500 text-blue-600' 
+                        : 'bg-white text-gray-500 hover:bg-gray-50'
+                    }`}
                   >
-                    Go
+                    {pageNumber}
                   </button>
-                </div>
+                ))}
                 
                 {/* Next Page */}
                 <button
@@ -251,6 +270,24 @@ const CustomTable = <T extends object>({
                   <span className="sr-only">Last Page</span>
                   <FiChevronsRight className="h-5 w-5" />
                 </button>
+                
+                {/* Jump to page */}
+                <div className="relative inline-flex items-center px-2 py-2 ml-2 border border-gray-300 bg-white text-sm rounded-md">
+                  <input
+                    type="text"
+                    placeholder="Go to"
+                    className="w-16 py-1 px-2 border-0 focus:ring-0 text-xs"
+                    value={jumpToPage}
+                    onChange={(e) => setJumpToPage(e.target.value.replace(/[^0-9]/g, ''))}
+                    onKeyDown={handleKeyDown}
+                  />
+                  <button
+                    onClick={handleJumpToPage}
+                    className="text-xs px-1 text-gray-700 hover:text-gray-900"
+                  >
+                    Go
+                  </button>
+                </div>
               </nav>
             </div>
           </div>
